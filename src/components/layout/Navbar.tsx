@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Menu, X, ChevronDown, User, LogOut, LayoutDashboard } from 'lucide-react'
+import { Menu, X, ChevronDown, User, LogOut, LayoutDashboard, Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Tenant } from '@/types/tenant'
 import { DEFAULT_TENANT } from '@/lib/constants'
@@ -134,13 +134,23 @@ export default function Navbar({ tenant = DEFAULT_TENANT }: NavbarProps) {
                       Mi panel
                     </Link>
                     <Link
-                      href="/usuario"
+                      href="/usuario/perfil"
                       className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                       onClick={() => setUserMenuOpen(false)}
                     >
                       <User size={15} className="text-gray-400" />
                       Mi perfil
                     </Link>
+                    {user.role === 'comprador' && (
+                      <Link
+                        href="/usuario/alertas"
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <Bell size={15} className="text-gray-400" />
+                        Mis alertas
+                      </Link>
+                    )}
                     <div className="border-t border-gray-100 mt-1 pt-1">
                       <button
                         onClick={handleLogout}
