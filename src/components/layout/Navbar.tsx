@@ -43,7 +43,8 @@ export default function Navbar({ tenant = DEFAULT_TENANT }: NavbarProps) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const dashboardHref = user?.role === 'inmobiliaria' ? '/inmobiliaria' : '/usuario'
+  const dashboardHref =
+    user?.role === 'AGENCY_ADMIN' || user?.role === 'AGENT' ? '/inmobiliaria' : '/usuario'
 
   const handleLogout = () => {
     logout()
@@ -141,7 +142,7 @@ export default function Navbar({ tenant = DEFAULT_TENANT }: NavbarProps) {
                       <User size={15} className="text-gray-400" />
                       Mi perfil
                     </Link>
-                    {user.role === 'comprador' && (
+                    {user.role === 'USER' && (
                       <Link
                         href="/usuario/alertas"
                         className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"

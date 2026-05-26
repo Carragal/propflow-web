@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, DM_Sans } from "next/font/google";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
+import Providers from "./providers";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -40,7 +41,7 @@ export default function RootLayout({
         className="min-h-full flex flex-col antialiased"
         style={{ fontFamily: "var(--font-dm-sans), system-ui, sans-serif" }}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

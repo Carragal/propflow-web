@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff, AlertCircle, Loader2, Home, Building2, CheckCircle2 } from 'lucide-react'
 import { registerSchema, type RegisterInput } from '@/lib/validations'
-import { useAuthStore } from '@/store/useAuthStore'
+import { useAuthStore, getDashboardPath } from '@/store/useAuthStore'
 import { cn } from '@/lib/utils'
 
 type Role = 'comprador' | 'inmobiliaria'
@@ -69,7 +69,7 @@ export default function RegistroPage() {
     })
     const state = useAuthStore.getState()
     if (state.user) {
-      router.push(state.user.role === 'inmobiliaria' ? '/inmobiliaria' : '/usuario')
+      router.push(getDashboardPath(state.user.role))
     }
   }
 

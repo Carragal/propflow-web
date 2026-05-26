@@ -13,7 +13,7 @@ interface SearchState {
 
 export const useSearchStore = create<SearchState>((set) => ({
   filters: {},
-  operation: 'venta',
+  operation: '' as OperationType,
   query: '',
   setOperation: (operation) => set({ operation }),
   setQuery: (query) => set({ query }),

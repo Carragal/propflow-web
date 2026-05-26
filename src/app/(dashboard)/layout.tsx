@@ -31,7 +31,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const { user, logout } = useAuthStore()
 
-  const nav = user?.role === 'inmobiliaria' ? AGENCY_NAV : BUYER_NAV
+  const isAgency = user?.role === 'AGENCY_ADMIN' || user?.role === 'AGENT'
+  const nav = isAgency ? AGENCY_NAV : BUYER_NAV
 
   const handleLogout = () => {
     logout()

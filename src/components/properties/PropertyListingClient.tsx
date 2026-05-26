@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LayoutGrid, Map, SlidersHorizontal, X, ArrowUpDown } from 'lucide-react'
+import { LayoutGrid, Map, SlidersHorizontal, X, ArrowUpDown, Loader2 } from 'lucide-react'
 import type { Property, PropertyFilters } from '@/types/property'
+import { useProperties, PAGE_SIZE } from '@/hooks/useProperties'
 import PropertyCard from './PropertyCard'
 import PropertyFiltersComponent from './PropertyFilters'
 import SearchBar from '@/components/search/SearchBar'
@@ -20,23 +21,6 @@ const SORT_LABELS: Record<SortOption, string> = {
   newest: 'Más reciente',
 }
 
-function applyFilters(properties: Property[], filters: PropertyFilters): Property[] {
-  return properties.filter((p) => {
-    if (filters.operation && p.operation !== filters.operation) return false
-    if (filters.type && p.type !== filters.type) return false
-    if (filters.city && !p.city.toLowerCase().includes(filters.city.toLowerCase())) return false
-    if (filters.neighborhood && !p.neighborhood.toLowerCase().includes(filters.neighborhood.toLowerCase())) return false
-    if (filters.minPrice && p.price < filters.minPrice) return false
-    if (filters.maxPrice && p.price > filters.maxPrice) return false
-    if (filters.minRooms && p.rooms < filters.minRooms) return false
-    if (filters.features?.length) {
-      const hasAll = filters.features.every((f) => p.features.includes(f))
-      if (!hasAll) return false
-    }
-    return true
-  })
-}
-
 function applySort(properties: Property[], sort: SortOption): Property[] {
   const copy = [...properties]
   switch (sort) {
@@ -48,12 +32,10 @@ function applySort(properties: Property[], sort: SortOption): Property[] {
 }
 
 interface PropertyListingClientProps {
-  allProperties: Property[]
   initialFilters?: PropertyFilters
 }
 
 export default function PropertyListingClient({
-  allProperties,
   initialFilters = {},
 }: PropertyListingClientProps) {
   const [filters, setFilters] = useState<PropertyFilters>(initialFilters)
@@ -61,9 +43,29 @@ export default function PropertyListingClient({
   const [view, setView] = useState<'grid' | 'map'>('grid')
   const [selectedId, setSelectedId] = useState<string>()
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [offset, setOffset] = useState(0)
+  const [allProperties, setAllProperties] = useState<Property[]>([])
 
-  const filtered = useMemo(() => applyFilters(allProperties, filters), [allProperties, filters])
-  const results = useMemo(() => applySort(filtered, sort), [filtered, sort])
+  const { data, isLoading, isError, isFetching } = useProperties(filters, offset)
+
+  // Reset al cambiar filtros
+  useEffect(() => {
+    setOffset(0)
+    setAllProperties([])
+  }, [filters])
+
+  // Acumular propiedades al cargar más
+  useEffect(() => {
+    if (data?.items) {
+      setAllProperties((prev) =>
+        offset === 0 ? data.items : [...prev, ...data.items],
+      )
+    }
+  }, [data, offset])
+
+  const total = data?.meta?.total ?? 0
+  const hasMore = allProperties.length < total
+  const results = useMemo(() => applySort(allProperties, sort), [allProperties, sort])
 
   return (
     <div className="flex flex-col min-h-screen pt-16 bg-gray-50">
@@ -93,7 +95,20 @@ export default function PropertyListingClient({
             <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
               <div>
                 <h1 className="text-lg font-bold text-gray-900">
-                  {results.length} {results.length === 1 ? 'propiedad' : 'propiedades'}
+                  {isLoading && offset === 0 ? (
+                    <span className="flex items-center gap-2 text-gray-400">
+                      <Loader2 size={16} className="animate-spin" />
+                      Buscando...
+                    </span>
+                  ) : (
+                    <>
+                      {total > 0 ? (
+                        <>{results.length} de {total} {total === 1 ? 'propiedad' : 'propiedades'}</>
+                      ) : (
+                        <>{results.length} {results.length === 1 ? 'propiedad' : 'propiedades'}</>
+                      )}
+                    </>
+                  )}
                 </h1>
                 {Object.values(filters).some(Boolean) && (
                   <p className="text-xs text-gray-400 mt-0.5">Filtros aplicados</p>
@@ -150,11 +165,19 @@ export default function PropertyListingClient({
               </div>
             </div>
 
+            {/* Error */}
+            {isError && (
+              <div className="py-12 text-center">
+                <p className="text-gray-400">No se pudieron cargar las propiedades.</p>
+                <p className="text-xs text-gray-300 mt-1">Verificá que el servidor esté corriendo.</p>
+              </div>
+            )}
+
             {/* ── Grid view ── */}
-            {view === 'grid' && (
+            {!isError && view === 'grid' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                <AnimatePresence mode="popLayout">
-                  {results.length === 0 ? (
+                <AnimatePresence mode="wait">
+                  {!isLoading && results.length === 0 ? (
                     <motion.div
                       key="empty"
                       initial={{ opacity: 0 }}
@@ -170,28 +193,42 @@ export default function PropertyListingClient({
                         Limpiar filtros
                       </button>
                     </motion.div>
-                  ) : (
-                    results.map((property, index) => (
-                      <motion.div
-                        key={property.id}
-                        layout
-                        initial={{ opacity: 0, scale: 0.96 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.96 }}
-                        transition={{ duration: 0.25, delay: index * 0.04 }}
-                      >
-                        <PropertyCard property={property} />
-                      </motion.div>
-                    ))
-                  )}
+                  ) : null}
                 </AnimatePresence>
+                {results.map((property, index) => (
+                  <motion.div
+                    key={property.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index >= offset ? (index - offset) * 0.05 : 0 }}
+                  >
+                    <PropertyCard property={property} />
+                  </motion.div>
+                ))}
+              </div>
+            )}
+
+            {/* ── Load more ── */}
+            {!isError && view === 'grid' && hasMore && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
+                  disabled={isFetching}
+                  className="flex items-center gap-2 px-8 py-3 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-60"
+                  style={{ backgroundColor: '#1A6B5A' }}
+                >
+                  {isFetching ? (
+                    <><Loader2 size={16} className="animate-spin" />Cargando...</>
+                  ) : (
+                    'Cargar más propiedades'
+                  )}
+                </button>
               </div>
             )}
 
             {/* ── Map view ── */}
-            {view === 'map' && (
+            {!isError && view === 'map' && (
               <div className="flex gap-4 h-[calc(100vh-220px)]">
-                {/* Map */}
                 <div className="flex-1 rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
                   <PropertyMap
                     properties={results}
@@ -200,20 +237,18 @@ export default function PropertyListingClient({
                     className="w-full h-full"
                   />
                 </div>
-
-                {/* Side list */}
                 <div className="w-80 flex-shrink-0 overflow-y-auto space-y-3 pr-1 scrollbar-hide">
                   {results.map((property) => (
                     <div
                       key={property.id}
-                      onClick={() => setSelectedId(
-                        selectedId === property.id ? undefined : property.id
-                      )}
+                      onClick={() =>
+                        setSelectedId(selectedId === property.id ? undefined : property.id)
+                      }
                       className={cn(
                         'cursor-pointer rounded-xl border transition-all',
                         selectedId === property.id
                           ? 'border-brand-400 shadow-md ring-1 ring-brand-200'
-                          : 'border-gray-100 hover:border-gray-200'
+                          : 'border-gray-100 hover:border-gray-200',
                       )}
                       style={
                         selectedId === property.id

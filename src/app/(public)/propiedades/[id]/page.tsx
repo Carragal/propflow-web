@@ -12,7 +12,7 @@ import {
   CalendarDays,
   Building2,
 } from 'lucide-react'
-import { mockProperties } from '@/lib/mockData'
+import { serverFetch } from '@/lib/api'
 import { OPERATION_TYPE_LABELS, PROPERTY_TYPE_LABELS } from '@/lib/constants'
 import { formatPrice } from '@/lib/utils'
 import ImageGallery from '@/components/properties/ImageGallery'
@@ -20,9 +20,54 @@ import ContactCard from '@/components/properties/ContactCard'
 import AIMatchBadge from '@/components/shared/AIMatchBadge'
 import PropertyGrid from '@/components/properties/PropertyGrid'
 import PropertyMapClient from '@/components/properties/PropertyMapClient'
+import type { Property } from '@/types/property'
 
-export function generateStaticParams() {
-  return mockProperties.map((p) => ({ id: p.id }))
+interface ApiPropertyDetail {
+  id: string
+  title: string
+  description: string
+  type: string
+  operation: string
+  price: number
+  currency: 'ARS' | 'USD'
+  surface: number
+  rooms?: number | null
+  bathrooms?: number | null
+  parking?: number | null
+  address: string
+  neighborhood?: string | null
+  city: string
+  province: string
+  lat: number
+  lng: number
+  images: string[]
+  has360Tour: boolean
+  tour360Url?: string | null
+  features: string[]
+  status: string
+  featured: boolean
+  views: number
+  createdAt: string
+  updatedAt: string
+  agencyId: string
+}
+
+interface SimilarResponse {
+  items: ApiPropertyDetail[]
+}
+
+function normalize(p: ApiPropertyDetail): Property {
+  return {
+    ...p,
+    type: p.type.toLowerCase() as Property['type'],
+    operation: p.operation.toLowerCase() as Property['operation'],
+    rooms: p.rooms ?? 0,
+    bathrooms: p.bathrooms ?? 0,
+    parking: p.parking ?? 0,
+    neighborhood: p.neighborhood ?? '',
+    aiMatchScore: undefined,
+    agentId: '',
+  }
 }
 
 export default async function PropertyDetailPage({
@@ -31,19 +76,24 @@ export default async function PropertyDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const property = mockProperties.find((p) => p.id === id)
-  if (!property) notFound()
 
-  // Mock extra images by repeating/varying the main image
-  const images = [
-    property.images[0],
-    property.images[0].replace('w=800', 'w=801'),
-    property.images[0].replace('w=800', 'w=802'),
-  ]
+  const [raw, similarRaw] = await Promise.all([
+    serverFetch<ApiPropertyDetail>(`/properties/${id}`),
+    serverFetch<SimilarResponse>('/properties?limit=4'),
+  ])
 
-  const similar = mockProperties
-    .filter((p) => p.id !== property.id && p.type === property.type)
+  if (!raw) notFound()
+
+  const property = normalize(raw)
+  const similar = (similarRaw?.items ?? [])
+    .filter((p) => p.id !== id)
     .slice(0, 3)
+    .map(normalize)
+
+  const images =
+    property.images.length > 0
+      ? property.images
+      : ['https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800']
 
   const stats = [
     { icon: BedDouble, label: 'Ambientes', value: property.rooms > 0 ? `${property.rooms} amb.` : '—' },
@@ -67,16 +117,11 @@ export default async function PropertyDetailPage({
         <div className="grid lg:grid-cols-3 gap-8">
           {/* ── Left / Main ──────────────────────────────── */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Gallery */}
             <ImageGallery images={images} title={property.title} />
 
-            {/* Header info */}
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-3">
-                <span
-                  className="text-xs font-semibold uppercase tracking-widest"
-                  style={{ color: '#1A6B5A' }}
-                >
+                <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#1A6B5A' }}>
                   {PROPERTY_TYPE_LABELS[property.type]}
                 </span>
                 <span className="text-gray-300">·</span>
@@ -104,8 +149,7 @@ export default async function PropertyDetailPage({
               <div className="flex items-center gap-1.5 text-gray-500 text-sm">
                 <MapPin size={14} className="flex-shrink-0" />
                 <span>
-                  {property.address}, {property.neighborhood}, {property.city},{' '}
-                  {property.province}
+                  {property.address}, {property.neighborhood}, {property.city}, {property.province}
                 </span>
               </div>
             </div>
@@ -113,10 +157,7 @@ export default async function PropertyDetailPage({
             {/* Stats strip */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {stats.map(({ icon: Icon, label, value }) => (
-                <div
-                  key={label}
-                  className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center text-center"
-                >
+                <div key={label} className="bg-gray-50 rounded-2xl p-4 flex flex-col items-center text-center">
                   <Icon size={20} className="text-gray-400 mb-2" />
                   <p className="text-lg font-bold text-gray-900">{value}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{label}</p>
@@ -136,10 +177,7 @@ export default async function PropertyDetailPage({
                 <h2 className="text-lg font-bold text-gray-900 mb-4">Características y comodidades</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {property.features.map((feat) => (
-                    <div
-                      key={feat}
-                      className="flex items-center gap-2.5 bg-gray-50 rounded-xl px-4 py-3"
-                    >
+                    <div key={feat} className="flex items-center gap-2.5 bg-gray-50 rounded-xl px-4 py-3">
                       <CheckCircle2 size={15} style={{ color: '#1A6B5A' }} className="flex-shrink-0" />
                       <span className="text-sm text-gray-700 capitalize">{feat}</span>
                     </div>
@@ -174,10 +212,7 @@ export default async function PropertyDetailPage({
             <div>
               <h2 className="text-lg font-bold text-gray-900 mb-4">Ubicación</h2>
               <div className="h-64 rounded-2xl overflow-hidden border border-gray-100">
-                <PropertyMapClient
-                  properties={[property]}
-                  className="w-full h-full"
-                />
+                <PropertyMapClient properties={[property]} className="w-full h-full" />
               </div>
               <p className="text-xs text-gray-400 mt-2">
                 La ubicación mostrada es aproximada para proteger la privacidad del propietario.
@@ -196,46 +231,25 @@ export default async function PropertyDetailPage({
                 {property.operation === 'alquiler' && (
                   <p className="text-xs text-gray-400">por mes</p>
                 )}
-                {property.aiMatchScore !== undefined && (
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs text-gray-500">Tu score de match IA</span>
-                      <span className="text-sm font-bold" style={{ color: '#1A6B5A' }}>
-                        {property.aiMatchScore}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-1.5">
-                      <div
-                        className="h-1.5 rounded-full transition-all"
-                        style={{
-                          width: `${property.aiMatchScore}%`,
-                          backgroundColor: '#1A6B5A',
-                        }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-400 mt-1.5">
-                      Basado en tu perfil y preferencias.
-                    </p>
-                  </div>
-                )}
               </div>
 
-              {/* Contact */}
-              <ContactCard />
+              <ContactCard propertyId={property.id} />
 
-              {/* Meta */}
               <div className="bg-gray-50 rounded-2xl p-4 space-y-2.5">
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <CalendarDays size={13} />
-                  <span>Publicado el{' '}
+                  <span>
+                    Publicado el{' '}
                     {new Date(property.createdAt).toLocaleDateString('es-AR', {
-                      day: 'numeric', month: 'long', year: 'numeric'
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
                     })}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <Building2 size={13} />
-                  <span>ID de propiedad: {property.id}</span>
+                  <span>ID: {property.id.slice(0, 8)}…</span>
                 </div>
               </div>
             </div>

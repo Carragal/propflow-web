@@ -1,4 +1,3 @@
-import { mockProperties } from '@/lib/mockData'
 import PropertyListingClient from '@/components/properties/PropertyListingClient'
 import type { PropertyFilters, OperationType, PropertyType } from '@/types/property'
 
@@ -17,16 +16,11 @@ export default async function PropiedadesPage({
   const params = await searchParams
 
   const initialFilters: PropertyFilters = {
-    operation: (params.operacion as OperationType) || 'venta',
+    operation: params.operacion as OperationType | undefined,
     type: params.tipo as PropertyType | undefined,
     city: params.ciudad,
     neighborhood: params.barrio,
   }
 
-  return (
-    <PropertyListingClient
-      allProperties={mockProperties}
-      initialFilters={initialFilters}
-    />
-  )
+  return <PropertyListingClient initialFilters={initialFilters} />
 }

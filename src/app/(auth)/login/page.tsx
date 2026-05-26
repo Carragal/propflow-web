@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react'
 import { loginSchema, type LoginInput } from '@/lib/validations'
-import { useAuthStore } from '@/store/useAuthStore'
+import { useAuthStore, getDashboardPath } from '@/store/useAuthStore'
 import { cn } from '@/lib/utils'
 
 export default function LoginPage() {
@@ -28,7 +28,7 @@ export default function LoginPage() {
     await login(data.email, data.password)
     const state = useAuthStore.getState()
     if (state.user) {
-      router.push(state.user.role === 'inmobiliaria' ? '/inmobiliaria' : '/usuario')
+      router.push(getDashboardPath(state.user.role))
     }
   }
 
@@ -145,15 +145,6 @@ export default function LoginPage() {
       </form>
 
       {/* Demo hint */}
-      <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
-        <p className="text-xs text-gray-500 font-medium mb-1">Credenciales de demo</p>
-        <p className="text-xs text-gray-400">
-          Comprador: <span className="font-mono text-gray-600">juan@casaai.com</span> / cualquier contraseña
-        </p>
-        <p className="text-xs text-gray-400">
-          Inmobiliaria: <span className="font-mono text-gray-600">admin@reinvent.com</span> / cualquier contraseña
-        </p>
-      </div>
     </>
   )
 }

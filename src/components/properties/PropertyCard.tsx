@@ -24,13 +24,19 @@ export default function PropertyCard({ property, index = 0 }: PropertyCardProps)
     >
       {/* Image */}
       <div className="relative h-52 overflow-hidden bg-gray-100">
-        <Image
-          src={property.images[0]}
-          alt={property.title}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-        />
+        {property.images?.[0] ? (
+          <Image
+            src={property.images[0]}
+            alt={property.title}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+            <span className="text-gray-400 text-xs">Sin imagen</span>
+          </div>
+        )}
 
         {/* Badges overlay */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5">

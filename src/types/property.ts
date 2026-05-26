@@ -37,5 +37,6 @@ export interface PropertyFilters {
   minRooms?: number
   neighborhood?: string
   city?: string
+  currency?: 'ARS' | 'USD'
   features?: string[]
 }
