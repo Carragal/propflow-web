@@ -39,4 +39,5 @@ export interface PropertyFilters {
   city?: string
   currency?: 'ARS' | 'USD'
   features?: string[]
+  search?: string
 }

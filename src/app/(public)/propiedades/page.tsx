@@ -6,6 +6,7 @@ interface SearchParams {
   tipo?: string
   ciudad?: string
   barrio?: string
+  q?: string
 }
 
 export default async function PropiedadesPage({
@@ -20,6 +21,7 @@ export default async function PropiedadesPage({
     type: params.tipo as PropertyType | undefined,
     city: params.ciudad,
     neighborhood: params.barrio,
+    search: params.q,
   }
 
   return <PropertyListingClient initialFilters={initialFilters} />

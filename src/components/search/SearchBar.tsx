@@ -40,7 +40,15 @@ export default function SearchBar({ compact = false, className }: SearchBarProps
     const params = new URLSearchParams()
     params.set('operacion', operation)
     if (propertyType) params.set('tipo', propertyType)
-    if (location) params.set('ciudad', location)
+    if (location) {
+      // Si el texto coincide exactamente con una ciudad, filtra por ciudad
+      // Si no, hace búsqueda libre (título, barrio, descripción)
+      const isCity = ARGENTINIAN_CITIES.some(
+        (c) => c.toLowerCase() === location.toLowerCase()
+      )
+      if (isCity) params.set('ciudad', location)
+      else params.set('q', location)
+    }
     router.push(`/propiedades?${params.toString()}`)
   }
 

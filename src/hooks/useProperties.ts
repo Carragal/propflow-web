@@ -40,6 +40,7 @@ function buildQueryString(filters: PropertyFilters, limit: number, offset: numbe
   if (filters.features?.length) {
     filters.features.forEach((f) => params.append('features', f))
   }
+  if (filters.search) params.set('search', filters.search)
   params.set('limit', String(limit))
   params.set('offset', String(offset))
   return params.toString()

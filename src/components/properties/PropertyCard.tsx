@@ -2,12 +2,13 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { Bath, BedDouble, Car, Maximize2, MapPin, Video } from 'lucide-react'
+import { Bath, BedDouble, Car, Heart, Maximize2, MapPin, Video } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { Property } from '@/types/property'
 import { OPERATION_TYPE_LABELS, PROPERTY_TYPE_LABELS } from '@/lib/constants'
 import AIMatchBadge from '@/components/shared/AIMatchBadge'
 import PriceTag from '@/components/shared/PriceTag'
+import { useFavorites } from '@/hooks/useFavorites'
 
 interface PropertyCardProps {
   property: Property
@@ -15,6 +16,9 @@ interface PropertyCardProps {
 }
 
 export default function PropertyCard({ property, index = 0 }: PropertyCardProps) {
+  const { isFavorite, toggle, isLoggedIn } = useFavorites()
+  const faved = isFavorite(property.id)
+
   return (
     <motion.article
       initial={{ opacity: 0, y: 20 }}
@@ -51,8 +55,21 @@ export default function PropertyCard({ property, index = 0 }: PropertyCardProps)
           )}
         </div>
 
-        {/* Operation badge */}
-        <div className="absolute top-3 right-3">
+        {/* Top-right: heart + operation badge */}
+        <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5">
+          {isLoggedIn && (
+            <button
+              onClick={(e) => { e.preventDefault(); toggle(property.id) }}
+              className="p-1.5 rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:scale-110 transition-all"
+              title={faved ? 'Quitar de guardadas' : 'Guardar propiedad'}
+            >
+              <Heart
+                size={14}
+                className={faved ? 'text-red-500' : 'text-gray-400'}
+                fill={faved ? '#ef4444' : 'none'}
+              />
+            </button>
+          )}
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-sm text-gray-800 shadow-sm">
             {OPERATION_TYPE_LABELS[property.operation]}
           </span>
