@@ -43,8 +43,9 @@ export default function Navbar({ tenant = DEFAULT_TENANT }: NavbarProps) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const dashboardHref =
-    user?.role === 'AGENCY_ADMIN' || user?.role === 'AGENT' ? '/inmobiliaria' : '/usuario'
+  const isAgency = user?.role === 'AGENCY_ADMIN' || user?.role === 'AGENT'
+  const dashboardHref = isAgency ? '/inmobiliaria' : '/usuario'
+  const profileHref = isAgency ? '/inmobiliaria/config' : '/usuario/perfil'
 
   const handleLogout = () => {
     logout()
@@ -135,7 +136,7 @@ export default function Navbar({ tenant = DEFAULT_TENANT }: NavbarProps) {
                       Mi panel
                     </Link>
                     <Link
-                      href="/usuario/perfil"
+                      href={profileHref}
                       className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                       onClick={() => setUserMenuOpen(false)}
                     >

@@ -2,20 +2,28 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Heart, Search, Bell, Sparkles, ArrowRight, MapPin, TrendingUp } from 'lucide-react'
+import { Heart, Search, Bell, Sparkles, ArrowRight, MapPin, TrendingUp, Loader2 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/useAuthStore'
-import { mockProperties } from '@/lib/mockData'
+import { api } from '@/lib/api'
 import { formatPrice } from '@/lib/utils'
-import AIMatchBadge from '@/components/shared/AIMatchBadge'
 
-const SAVED_IDS = ['1', '3', '6']
-const savedProperties = mockProperties.filter((p) => SAVED_IDS.includes(p.id))
+interface FavoriteProperty {
+  id: string
+  title: string
+  price: number
+  currency: 'USD' | 'ARS'
+  neighborhood: string
+  city: string
+  images: string[]
+  aiMatchScore?: number
+}
 
-const QUICK_ACTIONS = [
-  { icon: Heart, label: 'Guardadas', count: 3, href: '/usuario/guardadas', color: '#ef4444' },
-  { icon: Search, label: 'Búsquedas guardadas', count: 2, href: '/usuario/busquedas', color: '#3b82f6' },
-  { icon: Bell, label: 'Alertas activas', count: 1, href: '/usuario/alertas', color: '#f59e0b' },
-]
+interface Favorite {
+  id: string
+  propertyId: string
+  property: FavoriteProperty
+}
 
 const RECENT_SEARCHES = [
   { label: 'Departamentos en venta · Palermo', count: 24 },
@@ -25,6 +33,22 @@ const RECENT_SEARCHES = [
 export default function UsuarioDashboard() {
   const { user } = useAuthStore()
   const firstName = user?.name.split(' ')[0] ?? 'Usuario'
+
+  const { data: favorites = [], isLoading } = useQuery<Favorite[]>({
+    queryKey: ['favorites'],
+    queryFn: () => api.get<Favorite[]>('/favorites'),
+    enabled: !!user,
+    staleTime: 1000 * 30,
+  })
+
+  const savedCount = favorites.length
+  const previewFavorites = favorites.slice(0, 3)
+
+  const QUICK_ACTIONS = [
+    { icon: Heart, label: 'Guardadas', count: savedCount, href: '/usuario/guardadas', color: '#ef4444' },
+    { icon: Search, label: 'Búsquedas guardadas', count: 2, href: '/usuario/busquedas', color: '#3b82f6' },
+    { icon: Bell, label: 'Alertas activas', count: 1, href: '/usuario/alertas', color: '#f59e0b' },
+  ]
 
   return (
     <div className="p-8">
@@ -39,8 +63,10 @@ export default function UsuarioDashboard() {
         </h1>
         <p className="text-gray-500 text-sm mt-1">
           Tenés{' '}
-          <span className="font-semibold text-gray-700">3 propiedades guardadas</span> y{' '}
-          <span className="font-semibold text-gray-700">1 alerta activa</span>.
+          <span className="font-semibold text-gray-700">
+            {isLoading ? '…' : `${savedCount} propiedad${savedCount !== 1 ? 'es' : ''} guardada${savedCount !== 1 ? 's' : ''}`}
+          </span>{' '}
+          y <span className="font-semibold text-gray-700">1 alerta activa</span>.
         </p>
       </div>
 
@@ -83,7 +109,9 @@ export default function UsuarioDashboard() {
             >
               <Icon size={18} style={{ color }} />
             </div>
-            <p className="text-2xl font-bold text-gray-900 mb-0.5">{count}</p>
+            <p className="text-2xl font-bold text-gray-900 mb-0.5">
+              {isLoading && href === '/usuario/guardadas' ? '…' : count}
+            </p>
             <p className="text-xs text-gray-500">{label}</p>
           </Link>
         ))}
@@ -98,43 +126,50 @@ export default function UsuarioDashboard() {
               Ver todas →
             </Link>
           </div>
-          <div className="space-y-3">
-            {savedProperties.map((property) => (
-              <Link
-                key={property.id}
-                href={`/propiedades/${property.id}`}
-                className="flex items-center gap-4 bg-white rounded-2xl border border-gray-100 p-4 hover:border-gray-200 hover:shadow-sm transition-all group"
-              >
-                <div className="relative w-20 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
-                  <Image
-                    src={property.images[0]}
-                    alt={property.title}
-                    fill
-                    className="object-cover"
-                    sizes="80px"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-emerald-700 transition-colors">
-                      {property.title}
-                    </p>
-                    {property.aiMatchScore !== undefined && (
-                      <AIMatchBadge score={property.aiMatchScore} size="sm" />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 size={24} className="animate-spin text-gray-300" />
+            </div>
+          ) : previewFavorites.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
+              <Heart size={30} className="mx-auto text-gray-200 mb-2" />
+              <p className="text-gray-500 text-sm">No tenés propiedades guardadas</p>
+              <Link href="/propiedades" className="mt-3 inline-block text-sm font-semibold hover:underline" style={{ color: '#1A6B5A' }}>
+                Explorar propiedades →
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {previewFavorites.map(({ id, propertyId, property: p }) => (
+                <Link
+                  key={id}
+                  href={`/propiedades/${propertyId}`}
+                  className="flex items-center gap-4 bg-white rounded-2xl border border-gray-100 p-4 hover:border-gray-200 hover:shadow-sm transition-all group"
+                >
+                  <div className="relative w-20 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
+                    {p.images?.[0] ? (
+                      <Image src={p.images[0]} alt={p.title} fill className="object-cover" sizes="80px" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200" />
                     )}
                   </div>
-                  <div className="flex items-center gap-1 text-gray-400 text-xs mb-1">
-                    <MapPin size={10} />
-                    {property.neighborhood}, {property.city}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-emerald-700 transition-colors mb-0.5">
+                      {p.title}
+                    </p>
+                    <div className="flex items-center gap-1 text-gray-400 text-xs mb-1">
+                      <MapPin size={10} />
+                      {[p.neighborhood, p.city].filter(Boolean).join(', ')}
+                    </div>
+                    <p className="text-sm font-bold text-gray-900">
+                      {formatPrice(p.price, p.currency)}
+                    </p>
                   </div>
-                  <p className="text-sm font-bold text-gray-900">
-                    {formatPrice(property.price, property.currency)}
-                  </p>
-                </div>
-                <ArrowRight size={16} className="text-gray-300 group-hover:text-gray-500 flex-shrink-0 transition-colors" />
-              </Link>
-            ))}
-          </div>
+                  <ArrowRight size={16} className="text-gray-300 group-hover:text-gray-500 flex-shrink-0 transition-colors" />
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Sidebar widgets */}

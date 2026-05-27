@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -33,6 +34,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const isAgency = user?.role === 'AGENCY_ADMIN' || user?.role === 'AGENT'
   const nav = isAgency ? AGENCY_NAV : BUYER_NAV
+
+  useEffect(() => {
+    if (!user) return
+    if (isAgency && pathname.startsWith('/usuario')) {
+      router.replace('/inmobiliaria')
+    } else if (!isAgency && pathname.startsWith('/inmobiliaria')) {
+      router.replace('/usuario')
+    }
+  }, [user, isAgency, pathname, router])
 
   const handleLogout = () => {
     logout()
