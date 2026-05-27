@@ -37,13 +37,13 @@ export default function InmobiliariaDashboard() {
   const firstName = user?.name?.split(' ')[0] ?? 'Usuario'
 
   const { data: propsData, isLoading: loadingProps } = useQuery({
-    queryKey: ['properties', {}, 0],
+    queryKey: ['dashboard-properties'],
     queryFn: () => api.get<any>('/properties?limit=4&offset=0'),
     staleTime: 1000 * 60,
   })
 
   const { data: leadsData, isLoading: loadingLeads } = useQuery({
-    queryKey: ['leads'],
+    queryKey: ['dashboard-leads'],
     queryFn: () => api.get<any>('/leads?limit=4&offset=0'),
     staleTime: 1000 * 30,
   })

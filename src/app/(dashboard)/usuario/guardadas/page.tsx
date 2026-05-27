@@ -102,12 +102,12 @@ export default function GuardadasPage() {
                 <h3 className="font-semibold text-gray-900 text-sm leading-snug mb-1.5 line-clamp-2">{p.title}</h3>
                 <div className="flex items-center gap-1 text-gray-400 text-xs mb-3">
                   <MapPin size={11} />
-                  {p.neighborhood}, {p.city}
+                  {[p.neighborhood, p.city].filter(Boolean).join(', ')}
                 </div>
                 <div className="flex items-center gap-3 text-gray-500 text-xs mb-4 pb-3 border-b border-gray-50">
-                  {p.rooms > 0 && <span className="flex items-center gap-1"><BedDouble size={12} />{p.rooms} amb.</span>}
+                  {(p.rooms ?? 0) > 0 && <span className="flex items-center gap-1"><BedDouble size={12} />{p.rooms} amb.</span>}
                   <span className="flex items-center gap-1"><Maximize2 size={11} />{p.surface} m²</span>
-                  {p.bathrooms > 0 && <span className="flex items-center gap-1"><Bath size={12} />{p.bathrooms}</span>}
+                  {(p.bathrooms ?? 0) > 0 && <span className="flex items-center gap-1"><Bath size={12} />{p.bathrooms}</span>}
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-gray-900">{formatPrice(p.price, p.currency)}</span>

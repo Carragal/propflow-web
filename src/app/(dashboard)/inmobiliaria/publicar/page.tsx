@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { CheckCircle2, Loader2, Home, MapPin, DollarSign, Camera, ChevronRight, ChevronLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { api } from '@/lib/api'
 import { ARGENTINIAN_CITIES, PROPERTY_TYPE_LABELS, OPERATION_TYPE_LABELS, PROPERTY_FEATURES } from '@/lib/constants'
 
 const STEPS = ['Tipo y operación', 'Ubicación', 'Características', 'Precio y fotos'] as const
@@ -69,7 +70,6 @@ export default function PublicarPage() {
   const onSubmit = async (data: ListingInput) => {
     setSubmitting(true)
     try {
-      const { api } = await import('@/lib/api')
       await api.post('/properties', {
         ...data,
         type: data.type.toUpperCase(),
