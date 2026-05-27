@@ -66,11 +66,23 @@ export default function PublicarPage() {
     if (valid) setStep((s) => s + 1)
   }
 
-  const onSubmit = async (_data: ListingInput) => {
+  const onSubmit = async (data: ListingInput) => {
     setSubmitting(true)
-    await new Promise((r) => setTimeout(r, 1200))
-    setSubmitting(false)
-    setSubmitted(true)
+    try {
+      const { api } = await import('@/lib/api')
+      await api.post('/properties', {
+        ...data,
+        type: data.type.toUpperCase(),
+        operation: data.operation.toUpperCase(),
+        features,
+        images: [],
+      })
+      setSubmitted(true)
+    } catch {
+      // show error silently
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (submitted) {
