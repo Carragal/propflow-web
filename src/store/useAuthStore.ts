@@ -25,6 +25,7 @@ interface AuthState {
   logout: () => void
   clearError: () => void
   refreshToken: () => Promise<void>
+  updateUser: (patch: Partial<AuthUser>) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -66,6 +67,10 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => set({ user: null, accessToken: null, error: null }),
+
+      updateUser: (patch) => set((state) => ({
+        user: state.user ? { ...state.user, ...patch } : null,
+      })),
 
       clearError: () => set({ error: null }),
 
